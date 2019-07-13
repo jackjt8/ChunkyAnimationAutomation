@@ -9,6 +9,9 @@ from py_clui import Progress
 from sultan.api import Sultan
 s = Sultan()
 
+def clear_console():
+    os.system('cls' if os.name=='nt' else 'clear')
+
 # Coloured Text
 from colorama import init
 init()
@@ -21,7 +24,7 @@ def ask(text):
     print(Fore.MAGENTA + text + Style.RESET_ALL)
     return input()
 def warn(text):
-    print(Fore.YELLOW + Back.RED + text + Style.RESET_ALL)
+    print(Back.RED + text + Style.RESET_ALL)
 
 # Wrapper for the wrapper???
 def run_and_return(command):
@@ -34,30 +37,28 @@ def chunky_run(command):
         result = s.java('-jar ChunkyLauncher.jar -' + command).run()
 # Startup information
 
-
+clear_console()
 inform('Chunky Rendering Automation')
-warn('It is reccomended to clear out your scene folder beforehand, as this can get very messy VERY FAST!')
-warn('This script requires a copy of the ChunkyLauncher.jar to be placed in the directory with all these scripts.')
-inform('Please setup your scene inside of Chunky with the lighting you want, the selected chunks, etc.')
-warn('If you turn on Dump every X frames, **DO NOT SAVE SNAPSHOT FOR EVERY DUMP**. It will cause a lot of mess to happen.')
+inform('Please setup your scene inside of Chunky with the lighting you want, the selected chunks, camera location, etc')
 inform('Then give the scene a unique and memorable name and save the scene.')
+warn('If you turn on Dump every X frames, **DO NOT SAVE SNAPSHOT FOR EVERY DUMP**. It will get messy very fast, and make it a pain to stitch together the images.')
 warn('The name must not contain spaces!')
-
+warn('It is reccomended to clear out your scene folder beforehand, as this can get very messy VERY FAST!')
+warn('This script requires a copy of the ChunkyLauncher.jar to be placed in this directory with all these scripts.')
 ask('Press Enter once you have done this.')
 
-input()
 scene_list = run_and_return('list-scenes')
 for scene in scene_list:
     inform(scene)
 print()
 print()
 scene_name = ask('What scene would you like to render? (Type it exactly!)')
-chunky_folder = ask('What is your Chunky directory? eg: /home/snorlax/.chunky (Paste it here. If you cannot find it, look for the Settings loaded message above, but discard everything after ./chunky)')
+chunky_folder = ask('What is your Chunky directory? eg: /home/snorlax/.chunky (Paste it here. If you cannot find it, look for the Settings loaded message above, but discard everything after /.chunky)')
 
 # Check to see if the Chunky directory is actually where the user set it
 while (os.path.exists(chunky_folder + '/chunky.json') != True):
-    warn('That seems to be the incorrect folder!! Please try again.')
-    chunky_folder = ask('What is your Chunky directory? eg: /home/snorlax/.chunky (Paste it here. If you cannot find it, look for the Settings loaded message above, but discard everything after ./chunky)')
+    warn('That seems to be the incorrect folder! Please try again.')
+    chunky_folder = ask('What is your Chunky directory? eg: /home/snorlax/.chunky (Paste it here. If you cannot find it, look for the Settings loaded message above, but discard everything after /.chunky)')
 
 # Save this to a file for other processes to read
 info_to_write = {}
@@ -78,6 +79,6 @@ inform('2 | Straight Line flythrough -- NOT YET IMPLEMENTED')
 action = ask('Enter a number: ')
 print(action)
 if (action == '1'):
-    s.python('spot_rotate.py')
+    os.system('python spot_rotate.py')
 else:
     print('Not yet implemented. Exiting...')
