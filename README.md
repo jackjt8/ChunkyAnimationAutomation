@@ -7,7 +7,7 @@ The `ChunkyLauncher.jar` needs to be placed in the same folder as these scripts.
 This automates animations by creating several images doing the task specified, ready for you to stitch together.
 
 ---
-Huge credit to (Ryhida / jackjt8)[https://github.com/jackjt8] for dealing with my non-stop stupidity
+Huge credit to [Ryhida / jackjt8](https://github.com/jackjt8) for dealing with my non-stop stupidity
 
 ---
 
