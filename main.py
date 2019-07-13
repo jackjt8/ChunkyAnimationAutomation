@@ -78,6 +78,6 @@ inform('2 | Straight Line flythrough -- NOT YET IMPLEMENTED')
 action = ask('Enter a number: ')
 print(action)
 if (action == '1'):
-    os.system('python spot_rotate.py')
+    s.python('spot_rotate.py')
 else:
     print('Not yet implemented. Exiting...')
