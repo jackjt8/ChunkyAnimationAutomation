@@ -1,0 +1,2 @@
+# ChunkyAnimationAutomation
+Automated animated renders
