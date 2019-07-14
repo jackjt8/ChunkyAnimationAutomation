@@ -19,6 +19,9 @@ Usage
 ---
 
 Download this repository into a folder
+
 Download the Chunky (Launcher Only) and put it in the same folder as the scripts
+
 Create your scene in Chunky.
+
 Run `python main.py`, and follow all the prompts.
