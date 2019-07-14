@@ -21,17 +21,17 @@ from scipy import interpolate
 
 #%%
 def main():
-    decimals = 8 # for rounding
+    decimals = 8 # for rounding /// Internal use, might raise.
     
-    framerate = 24.0
+    framerate = 24.0 # ASK
     
-    keyscenes = []
+    keyscenes = [] # ASK
     #                [scene_fname, time_stamp]
-    keyscenes.append(['Skyrim0.json', -0.5]) # all time stamps pre 0.0 ignored post interp/convolution
-    keyscenes.append(['Skyrim1.json', 0.0]) # used as template for saving
+    keyscenes.append(['Skyrim0.json', -0.5]) # for quad/cubic this is trimmed ||| used as template for saving
+    keyscenes.append(['Skyrim1.json', 0.0])
     keyscenes.append(['Skyrim2.json', 1.0])
     keyscenes.append(['Skyrim3.json', 2.0])
-    keyscenes.append(['Skyrim4.json', 3.0]) # all time stamps post 3.0 ignored post interp/convolution
+    keyscenes.append(['Skyrim4.json', 3.0]) # for quad/cubic this is trimmed
     #keyscenes.append(['Skyrim5.json', 3.5]) 
     
     json_interp = json_interpT(framerate, decimals)
@@ -65,7 +65,8 @@ def main():
         
     elif setup_return == 3 or setup_return == 4:
         # smoothing == 1 (off) OR smoothing > 1 (on/strength)
-        json_interp.do_interpT('slinear',2) #ie ('slinear',5)
+        smoothing_var = 2 # ASK
+        json_interp.do_interpT('slinear', smoothing_var) #ie ('slinear', smoothing_var)
         
     else:
         """ASK if they want to use:
@@ -76,7 +77,8 @@ def main():
         smoothing == 1 (off) OR smoothing > 1 (on/strength)
         """
         kind = 'cubic' # ASK
-        json_interp.do_interpT(kind)
+        smoothing_var = 2 # ASK
+        json_interp.do_interpT(kind, smoothing_var)
         
         pass
     
