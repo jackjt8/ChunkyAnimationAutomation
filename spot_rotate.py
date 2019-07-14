@@ -2,6 +2,7 @@ import json
 import os
 import psutil
 import shutil
+from easygui import *
 # Progress bar, and other utilities
 
 from py_clui import gauge
@@ -13,7 +14,7 @@ def clear_console():
 from sultan.api import Sultan
 s = Sultan()
 
-# Coloured Text
+# why is this still here????
 from colorama import init
 init()
 from colorama import Fore, Back, Style
@@ -37,23 +38,29 @@ def chunky_run(command):
     with Sultan.load() as s:
         result = s.java('-jar ChunkyLauncher.jar -' + command).run()
 
-clear_console()
-inform('This is the Spot Rotation script. It is assumed that the current camera position is the location to rotate at, and will start rotating 360 from 0deg. (Facing south.) You can re-order the frames later using another program.')
-inform('What direction would you like to rotate?')
-inform('1 | Clockwise')
-inform('2 | Anti-Clockwise')
-rotation_type = ask('Enter a number: ')
-frames = int(ask('How many frames would you like the rotation to last? Enter a number of frames. (60 frames = 2s at 30fps OR 1s at 60fps; 120 frames = 2s at 60fps OR 4s at 30fps; etc'))
+msgbox('This is the Spot Rotation script.\n\nIt is assumed that the current camera position is the location to rotate at, and will start rotating 360deg from 0deg (ie south).')
+rotation_type = buttonbox('What direction would you like to rotate?', choices=['Clockwise', 'Anti-Clockwise'])
+log('Rotating ' + rotation_type)
+
+frames = None
+while frames == None:
+    frames = integerbox('How many frames would you like the rotation to last?\n\n 60 Frames = 1s at 60fps or 2s at 30fps; etc')
 rotation_increment = 360 / int(frames)
 
-if rotation_type == '1':
+if rotation_type == 'Clockwise':
     log('Rotating clockwise at ' + str(rotation_increment) + ' per frame')
 else:
     rotation_increment = rotation_increment * -1
     log('Rotating Anti-Clockwise at ' + str(rotation_increment) + ' per frame')
-target = int(ask('Enter the SPP target per frame'))
 
+target = None
+while target == None:
+    target = integerbox('How many SPP should each frame render to?')
+    log('Rendering to ' + str(target) + ' SPP per frame')
+target = int(target)
+msgbox('Writing scene JSON files, click OK and check console...')
 # Get info
+
 with open('info.json') as json_file:
     data = json.load(json_file)
     scene_name = data['details'][0]['scene_name']
@@ -91,16 +98,21 @@ with IncrementalBar('Copying JSON...', max=frames, suffix='%(percent).1f%% - %(e
             json.dump(data, new_scene)
             new_scene.close()
         bar.next()
-
+log('Scene JSON created.')
+msgbox('Scene JSON created. Handing over to the Render script.')
 
 # Handover below. Must be included at the end of every prep script
 
 # Write number of frames to frames.txt
 # It's incredibly hacky, fight me.
+log('Writing number of frames')
 file = open('frames.txt', 'w')
 file.write(str(frames))
 file.close()
-
+log('Writing SPP target..')
+file = open('target.txt', 'w')
+file.write(str(target))
+file.close()
 #Hand over to the render script
-inform('Beginning rendering...')
+log('Handing over to rendering.py ...')
 os.system('python rendering.py')
