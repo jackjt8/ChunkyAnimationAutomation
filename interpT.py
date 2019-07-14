@@ -290,7 +290,7 @@ class json_interpT():
             self.jsonsave(temp_scene, fname)       
         
 #%%
-if __name__ == '__main__':
-    print("interpT - tldr blame jackjt8")
-    print("debug code still present...")
-    main()
+#if __name__ == '__main__':
+#    print("interpT - tldr blame jackjt8")
+#    print("debug code still present...")
+#    main()
