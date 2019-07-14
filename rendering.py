@@ -96,3 +96,4 @@ with IncrementalBar('Renaming files...', max=frames, suffix='%(percent).1f%% - %
 log('File renaming complete')
 msgbox('Everything is done! Check your scene folder, and grab all the .png files.')
 log('Exiting...')
+sys.exit()
