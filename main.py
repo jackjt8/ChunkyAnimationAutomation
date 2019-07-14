@@ -81,6 +81,9 @@ action = choicebox('What would you like to do?', 'Select render type', ['Rotatio
 if (action == 'Rotation on the spot'):
     log('Rotation on the spot selected')
     log('Handing over to spot_rotate.py ...')
-    os.system('python spot_rotate.py')
+    from spot_rotate import execute_spot_rotate
+    execute_spot_rotate()
 else:
     print('Not yet implemented. This will come Soon. (tm)')
+    sys.exit()
+os.system('python rendering.py')
