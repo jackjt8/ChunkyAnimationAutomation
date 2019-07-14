@@ -5,7 +5,8 @@ Automate animated renders using Python 3.7
 Latest Update
 ---
 
-Added a GUI, and file renaming for easier importing into animation programs
+* Added a GUI, and file renaming for easier importing into animation programs
+* Imported the rotation script instead of spawning a new process
 
 ---
 
