@@ -3,7 +3,7 @@
 @author: jackjt8
 
 title: Chunky JSON generator
-      -  Camera interpT A-B
+      -  Camera interpT
 
 ver: 0.1 (2019-07-14) [Python 3.7]
 
@@ -80,10 +80,11 @@ def main():
     focal2 = 1.0
     
     #%%
+    decimals = 8 # for rounding
+    
     framerate = 24.0
     
     keyscenes = []
-    
     #                [scene_fname, time_stamp]
     #keyscenes.append(['Skyrim0.json', -0.5]) # all time stamps pre 0.0 ignored post interp/convolution
     keyscenes.append(['Skyrim1.json', 0.0]) # used as template for saving
@@ -92,7 +93,7 @@ def main():
     #keyscenes.append(['Skyrim4.json', 3.0]) # all time stamps post 3.0 ignored post interp/convolution
     #keyscenes.append(['Skyrim5.json', 3.5]) 
     
-    json_interp = json_interpT(framerate)
+    json_interp = json_interpT(framerate, decimals)
     setup_return = json_interp.keyscene_setup(keyscenes)
 
     if setup_return == 0:
@@ -114,20 +115,21 @@ def main():
         json_interp.point2_setup([t2, x2, y2, z2, roll2, pitch2, yaw2, fov2, dof2, focal2])
         
         # run linear interp
-        json_interp.do_interpT('slinear')
+        json_interp.do_interpT()
         
     elif setup_return == 2:
         # run linear interp
-        json_interp.do_interpT('slinear')
+        json_interp.do_interpT()
         
     elif setup_return == 3 or setup_return == 4:
-        # smoothing == 1 (off) OR smoothing > 1 (on/strength)
-        json_interp.do_interpT('slinear')
+        # smoothing == 1 (off)(default) OR smoothing > 1 (on/strength)
+        json_interp.do_interpT('slinear') #ie ('slinear',5)
+        
     else:
         """ASK if they want to use:
         slinear
-        quad
-        cubic
+        quad (need to padd)
+        cubic (need to padd)
         ---
         smoothing == 1 (off) OR smoothing > 1 (on/strength)
         """
@@ -141,7 +143,8 @@ def main():
     
 #%%  
 class json_interpT():
-    def __init__(self, framerate):
+    def __init__(self, framerate, decimals):
+        self.decimals = decimals
         self.camX = []
         self.camY = []
         self.camZ = []
@@ -185,16 +188,12 @@ class json_interpT():
             return 1
         
         elif len(self.source_scenes) == 2:
-            # AB
-            # disable smoothing + trim
-            print('2')
+            return 2
         
         elif len(self.source_scenes) == 3 or len(self.source_scenes) == 4:
-            # probably fall back to AB
-            print('3')
+            return 3
         else:
-            # use smoothing + trim with padding.
-            print('else')
+            return 5
         return
     
     #%%
@@ -215,7 +214,7 @@ class json_interpT():
         self.source_scenes[1]['camera']['focalOffset'] = focal2 # ASK
             
     #%%
-    def do_interpT(self, interp_mode):
+    def do_interpT(self, interp_mode = 'slinear', smoothing_var):
         # Fill the lists with data (at least what we want)
         for scene in self.source_scenes:
             self.camX.append(scene['camera']['position']['x'])
@@ -246,8 +245,16 @@ class json_interpT():
         self.new_camDoF = interpT(self.source_times, self.tframe, self.camDoF, interp_mode) # might go negative
         self.new_camfocalOffset = interpT(self.source_times, self.tframe, self.camfocalOffset, interp_mode) # might go negative
     
+        post_interpT_smooth(smoothing_var)
+        post_interpT_round(self, self.decimals)
+        
+        if interp_mode != 'slinear':
+            post_interpT_trim()
+        
+        
+        
     #%%    
-    def post_interpT_smooth(self, smoothing_var):
+    def post_interpT_smooth(self, smoothing_var = 1):
         #Data smoothing
         self.new_camX = smooth(self.new_camX,smoothing_var)
         self.new_camY = smooth(self.new_camY,smoothing_var)
@@ -259,102 +266,70 @@ class json_interpT():
         self.new_camFoV = smooth(self.new_camFoV,smoothing_var)
         self.new_camDoF = smooth(self.new_camDoF,smoothing_var)
         self.new_camfocalOffset = smooth(self.new_camfocalOffset,smoothing_var)
+    
+    #%%
+    def post_interpT_round(self, decimals):
+        # Data rounding... (to avoid any issues with Chunky)
+        self.new_camX = np.round(self.new_camX,decimals)
+        self.new_camY = np.round(self.new_camY,decimals)
+        self.new_camZ = np.round(self.new_camZ,decimals)
+        self.new_camRoll = np.round(self.new_camRoll,decimals)
+        self.new_camPitch = np.round(self.new_camPitch,decimals)
+        self.new_camYaw = np.round(self.new_camYaw,decimals)
+        
+        self.new_camFoV = np.round(self.new_camFoV,decimals)
+        self.new_camDoF = np.round(self.new_camDoF,decimals)
+        self.new_camfocalOffset = np.round(self.new_camfocalOffset,decimals)
         
     #%%
-#%%
+    def post_interpT_trim(self):
+        trim_idx = np.where( (self.tframe > self.source_times[1]) * (self.tframe < self.source_times[-2]) )[0]
+        trim_tframe = [self.tframe[i] for i in trim_idx]
+        
+        self.new_camX = [self.new_camX[i] for i in trim_idx]
+        self.new_camY = [self.new_camY[i] for i in trim_idx]
+        self.new_camZ = [self.new_camZ[i] for i in trim_idx]
+        self.new_camRoll = [self.new_camRoll[i] for i in trim_idx]
+        self.new_camPitch = [self.new_camPitch[i] for i in trim_idx]
+        self.new_camYaw = [self.new_camYaw[i] for i in trim_idx]
+        
+        self.new_camFoV = [self.new_camFoV[i] for i in trim_idx]
+        self.new_camDoF = [self.new_camDoF[i] for i in trim_idx]
+        self.new_camfocalOffset = [self.new_camfocalOffset[i] for i in trim_idx]
     
-
-# Used for triming scene padding later.
-#trim_idx = np.where( (tframe>source_times[1]) * (tframe<source_times[-2]) )[0]
-#trim_tframe = [tframe[i] for i in trim_idx]
-
+    #%%    
+    def save_json(self, SPP = 0, RD = 0, res_w = 0, res_h = 0):
+        for i in range(len(self.new_camX)):
+            temp_scene = self.source_scenes[0]
+        
+            temp_scene['camera']['position']['x'] = self.new_camX[i]
+            temp_scene['camera']['position']['y'] = self.new_camY[i]
+            temp_scene['camera']['position']['z'] = self.new_camZ[i]
+            temp_scene['camera']['orientation']['roll'] = self.new_camRoll[i]
+            temp_scene['camera']['orientation']['pitch'] = self.new_camPitch[i]
+            temp_scene['camera']['orientation']['yaw'] = self.new_camYaw[i]
+            
+            temp_scene['camera']['fov'] = self.new_camFoV[i]
+            temp_scene['camera']['dof'] = self.new_camDoF[i]
+            temp_scene['camera']['focalOffset'] = self.new_camfocalOffset[i]
+            
+            if SPP != 0:
+                temp_scene['spp'] = SPP
+                
+            if RD != 0:
+                temp_scene['rayDepth'] = RD
+                
+            if res_w != 0 and res_h != 0:
+                temp_scene['width'] = res_w
+                temp_scene['heigh'] = res_h
+            
+            name = 'interp_' + str(i).zfill( len(str(int(self.nframe))) ) # insure padding in file explorer
+            temp_scene['name'] = name
+            
+            fname = name + '.json'
+            jsonsave(temp_scene, fname)       
+        
 #%%
-
-
-
-#%%
-
-
-
-
-sys.exit(0)
-
-#%%
-
-
-
-#%%
-
-
-#%%
-# Data smoothing
-#new_camX = smooth(new_camX,smoothing_var)
-#new_camY = smooth(new_camY,smoothing_var)
-#new_camZ = smooth(new_camZ,smoothing_var)
-#new_camRoll = smooth(new_camRoll,smoothing_var)
-#new_camPitch = smooth(new_camPitch,smoothing_var)
-#new_camYaw = smooth(new_camYaw,smoothing_var)
-#
-#new_camFoV = smooth(new_camFoV,smoothing_var)
-#new_camDoF = smooth(new_camDoF,smoothing_var)
-#new_camfocalOffset = smooth(new_camfocalOffset,smoothing_var)
-
-#%%
-# Data rounding... (to avoid any issues with Chunky)
-new_camX = np.round(new_camX,decimals)
-new_camY = np.round(new_camY,decimals)
-new_camZ = np.round(new_camZ,decimals)
-new_camRoll = np.round(new_camRoll,decimals)
-new_camPitch = np.round(new_camPitch,decimals)
-new_camYaw = np.round(new_camYaw,decimals)
-
-new_camFoV = np.round(new_camFoV,decimals)
-new_camDoF = np.round(new_camDoF,decimals)
-new_camfocalOffset = np.round(new_camfocalOffset,decimals)
-
-#%%
-# trim unusable data? This might not be an issue if using slinear/linear + smoothing
-#   but I'll keep this in in case people use quad/cubic.
-#new_camX = [new_camX[i] for i in trim_idx]
-#new_camY = [new_camY[i] for i in trim_idx]
-#new_camZ = [new_camZ[i] for i in trim_idx]
-#new_camRoll = [new_camRoll[i] for i in trim_idx]
-#new_camPitch = [new_camPitch[i] for i in trim_idx]
-#new_camYaw = [new_camYaw[i] for i in trim_idx]
-#
-#new_camFoV = [new_camFoV[i] for i in trim_idx]
-#new_camDoF = [new_camDoF[i] for i in trim_idx]
-#new_camfocalOffset = [new_camfocalOffset[i] for i in trim_idx]
-
-#%%
-# create jsons
-for i in range(len(new_camX)):
-    temp_scene = source_scenes[1]
-    
-    temp_scene['camera']['position']['x'] = new_camX[i]
-    temp_scene['camera']['position']['y'] = new_camY[i]
-    temp_scene['camera']['position']['z'] = new_camZ[i]
-    temp_scene['camera']['orientation']['roll'] = new_camRoll[i]
-    temp_scene['camera']['orientation']['pitch'] = new_camPitch[i]
-    temp_scene['camera']['orientation']['yaw'] = new_camYaw[i]
-    
-    temp_scene['camera']['fov'] = new_camFoV[i]
-    temp_scene['camera']['dof'] = new_camDoF[i]
-    temp_scene['camera']['focalOffset'] = new_camfocalOffset[i]
-    
-    temp_scene['spp'] = SPP
-    temp_scene['rayDepth'] = RD
-    temp_scene['width'] = res_w
-    temp_scene['heigh'] = res_h
-    
-    name = 'interp_' + str(i).zfill( len(str(int(nframe))) ) # insure padding in file explorer
-    temp_scene['name'] = name
-    
-    fname = name + '.json'
-    jsonsave(temp_scene, fname)
-
-print('done')
-
 if __name__ == '__main__':
     print("interp - tldr blame jackjt8")
     main()
