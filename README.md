@@ -7,6 +7,7 @@ Latest Update
 
 Added a GUI, and file renaming for easier importing into animation programs
 
+---
 
 The `ChunkyLauncher.jar` needs to be placed in the same folder as these scripts.
 
