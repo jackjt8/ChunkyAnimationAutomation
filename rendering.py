@@ -1,9 +1,11 @@
 from __future__ import division
 import json
 import os
+from easygui import *
 # Progress bar, and other utilities
 from py_clui import Spinner
 from py_clui import gauge
+from progress.bar import IncrementalBar
 from tqdm import tqdm
 
 
@@ -14,7 +16,7 @@ s = Sultan()
 def clear_console():
     os.system('cls' if os.name=='nt' else 'clear')
 
-# Coloured Text
+# colored text
 from colorama import init
 init()
 from colorama import Fore, Back, Style
@@ -41,15 +43,16 @@ def chunky_run(command):
 from multiprocessing import Pool
 import subprocess
 import sys
-clear_console()
-inform('Rendering script - Render is about to begin')
-threads = int(ask('Enter number of threads per scene'))
-parallel = int(ask('Enter number of scenes to process in parallel'))
-inform('Enter the amount of RAM per thread to allocate.')
-warn('Leave Java Arguments blank by pressing enter when asked to fill out its field.')
-os.system('java -jar ChunkyLauncher.jar --setup')
 
 
+msgbox('Render script - Final steps before rendering')
+system_load = []
+system_load = multenterbox('Enter resource allocation', 'Resource allocation', ['Threads per scene', 'Scenes to process in parallel'])
+threads = int(system_load[0])
+parallel = int(system_load[1])
+log('Rendering ' + str(parallel) + ' scenes in parallel on ' + str(threads) + ' threads each')
+
+log('Grabbing details...')
 with open('info.json') as json_file:
     data = json.load(json_file)
     scene_name = data['details'][0]['scene_name']
@@ -63,14 +66,12 @@ file = open('frames.txt', 'r')
 frames = int(file.read())
 file.close()
 os.remove('frames.txt')
-explicit_logging = ask('Explicit logging on? This replaces the progress bar with the direct output of the Chunky processes. (True / False)')
-warn('Starting render...')
+msgbox('Rendering is about to start -- Check console for progress bar. It only updates when a scene completes, so please be patient. Click OK to begin.')
+warn('Starting rendering...')
 def f(i):
     to_render  = scene_name + str(i)
-    if (explicit_logging == 'False' or explicit_logging == 'no')):
-        subprocess.call('java -jar ChunkyLauncher.jar -render ' + to_render + ' -threads ' + str(threads), shell=True, stdout=open(os.devnull, 'wb'))
-    else:
-        subprocess.call('java -jar ChunkyLauncher.jar -render ' + to_render + ' -threads ' + str(threads), shell=True)
+    subprocess.call('java -jar ChunkyLauncher.jar -render ' + to_render + ' -threads ' + str(threads), shell=True, stdout=open(os.devnull, 'wb'))
+
 if __name__ == '__main__':
     p = Pool(int(parallel))
     for _ in tqdm(p.imap_unordered(f, range(frames)), total=len(range(frames))):
@@ -80,3 +81,19 @@ if __name__ == '__main__':
 
 
 inform('Rendering complete.')
+inform('Renaming files...')
+
+log('Getting SPP target')
+file = open('target.txt', 'r')
+target = int(file.read())
+file.close()
+with IncrementalBar('Renaming files...', max=frames, suffix='%(percent).1f%% - %(eta)ds') as bar:
+    for i in range(frames):
+        file_to_rename = chunky_directory + '/scenes/' + scene_name + str(i) + '-' + str(target) + '.png'
+        os.rename(file_to_rename, file_to_rename.replace('-' + str(target), ''))
+        bar.next()
+
+log('File renaming complete')
+msgbox('Everything is done! Check your scene folder, and grab all the .png files.')
+log('Exiting...')
+sys.exit()

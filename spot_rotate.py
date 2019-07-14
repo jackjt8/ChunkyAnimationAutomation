@@ -2,6 +2,7 @@ import json
 import os
 import psutil
 import shutil
+from easygui import *
 # Progress bar, and other utilities
 
 from py_clui import gauge
@@ -13,7 +14,7 @@ def clear_console():
 from sultan.api import Sultan
 s = Sultan()
 
-# Coloured Text
+# why is this still here????
 from colorama import init
 init()
 from colorama import Fore, Back, Style
@@ -36,71 +37,80 @@ def run_and_return(command):
 def chunky_run(command):
     with Sultan.load() as s:
         result = s.java('-jar ChunkyLauncher.jar -' + command).run()
+def execute_spot_rotate():
+    msgbox('This is the Spot Rotation script.\n\nIt is assumed that the current camera position is the location to rotate at, and will start rotating 360deg from 0deg (ie south).')
+    rotation_type = buttonbox('What direction would you like to rotate?', choices=['Clockwise', 'Anti-Clockwise'])
+    log('Rotating ' + rotation_type)
 
-clear_console()
-inform('This is the Spot Rotation script. It is assumed that the current camera position is the location to rotate at, and will start rotating 360 from 0deg. (Facing south.) You can re-order the frames later using another program.')
-inform('What direction would you like to rotate?')
-inform('1 | Clockwise')
-inform('2 | Anti-Clockwise')
-rotation_type = ask('Enter a number: ')
-frames = int(ask('How many frames would you like the rotation to last? Enter a number of frames. (60 frames = 2s at 30fps OR 1s at 60fps; 120 frames = 2s at 60fps OR 4s at 30fps; etc'))
-rotation_increment = 360 / int(frames)
+    frames = None
+    while frames == None:
+        frames = integerbox('How many frames would you like the rotation to last?\n\n 60 Frames = 1s at 60fps or 2s at 30fps; etc')
+    rotation_increment = 360 / int(frames)
 
-if rotation_type == '1':
-    log('Rotating clockwise at ' + str(rotation_increment) + ' per frame')
-else:
-    rotation_increment = rotation_increment * -1
-    log('Rotating Anti-Clockwise at ' + str(rotation_increment) + ' per frame')
-target = int(ask('Enter the SPP target per frame'))
+    if rotation_type == 'Clockwise':
+        log('Rotating clockwise at ' + str(rotation_increment) + ' per frame')
+    else:
+        rotation_increment = rotation_increment * -1
+        log('Rotating Anti-Clockwise at ' + str(rotation_increment) + ' per frame')
 
-# Get info
-with open('info.json') as json_file:
-    data = json.load(json_file)
-    scene_name = data['details'][0]['scene_name']
-    chunky_directory = data['details'][0]['chunky_directory']
-    json_file.close()
+    target = None
+    while target == None:
+        target = integerbox('How many SPP should each frame render to?')
+        log('Rendering to ' + str(target) + ' SPP per frame')
+        target = int(target)
+    msgbox('Writing scene JSON files, click OK and check console...')
+    # Get info
 
-scene_file = chunky_directory + '/scenes/' + scene_name + '.json'
+    with open('info.json') as json_file:
+        data = json.load(json_file)
+        scene_name = data['details'][0]['scene_name']
+        chunky_directory = data['details'][0]['chunky_directory']
+        json_file.close()
 
-# Setting the camera in the template
-count = 0
+    scene_file = chunky_directory + '/scenes/' + scene_name + '.json'
 
-with open(scene_file, 'r') as original_scene:
-    data = json.load(original_scene)
-    data['camera']['orientation']['yaw'] = 0.0
-    data['sppTarget'] = target
-    data['name'] = scene_name + str(0)
-    original_scene.close()
+    # Setting the camera in the template
+    count = 0
 
-with open(scene_file, "w") as new_scene:
-    json.dump(data, new_scene)
-    new_scene.close()
+    with open(scene_file, 'r') as original_scene:
+        data = json.load(original_scene)
+        data['camera']['orientation']['yaw'] = 0.0
+        data['sppTarget'] = target
+        data['name'] = scene_name + str(0)
+        original_scene.close()
 
-
-with IncrementalBar('Copying JSON...', max=frames, suffix='%(percent).1f%% - %(eta)ds') as bar:
-    for count in range(frames):
-        shutil.copyfile(scene_file, chunky_directory + '/scenes/' + scene_name + str(count) + '.json')
-        with open(scene_file, 'r') as original_scene:
-            data = json.load(original_scene)
-            data['camera']['orientation']['yaw'] += rotation_increment * count
-            data['sppTarget'] = target
-            data['name'] = scene_name + str(count)
-            original_scene.close()
-
-        with open(chunky_directory + '/scenes/' + scene_name + str(count) + '.json', "w") as new_scene:
-            json.dump(data, new_scene)
-            new_scene.close()
-        bar.next()
+    with open(scene_file, "w") as new_scene:
+        json.dump(data, new_scene)
+        new_scene.close()
 
 
-# Handover below. Must be included at the end of every prep script
+        with IncrementalBar('Copying JSON...', max=frames, suffix='%(percent).1f%% - %(eta)ds') as bar:
+            for count in range(frames):
+                shutil.copyfile(scene_file, chunky_directory + '/scenes/' + scene_name + str(count) + '.json')
+                with open(scene_file, 'r') as original_scene:
+                    data = json.load(original_scene)
+                    data['camera']['orientation']['yaw'] += rotation_increment * count
+                    data['sppTarget'] = target
+                    data['name'] = scene_name + str(count)
+                    original_scene.close()
 
-# Write number of frames to frames.txt
-# It's incredibly hacky, fight me.
-file = open('frames.txt', 'w')
-file.write(str(frames))
-file.close()
+                with open(chunky_directory + '/scenes/' + scene_name + str(count) + '.json', "w") as new_scene:
+                    json.dump(data, new_scene)
+                    new_scene.close()
+            bar.next()
+    log('Scene JSON created.')
+    msgbox('Scene JSON created. Handing over to the Render script.')
 
-#Hand over to the render script
-inform('Beginning rendering...')
-os.system('python rendering.py')
+    
+    # Handover below. Must be included at the end of every prep script
+    # Write number of frames to frames.txt and SPP target to target.txt
+    # It's incredibly hacky, fight me.
+    log('Writing number of frames')
+    file = open('frames.txt', 'w')
+    file.write(str(frames))
+    file.close()
+    log('Writing SPP target..')
+    file = open('target.txt', 'w')
+    file.write(str(target))
+    file.close()
+    log('Handing over to rendering.py ...')

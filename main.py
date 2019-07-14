@@ -1,5 +1,7 @@
 import json
 import os
+from os import path
+from easygui import *
 # Progress bar, and other utilities
 from py_clui import Spinner
 from py_clui import gauge
@@ -12,7 +14,7 @@ s = Sultan()
 def clear_console():
     os.system('cls' if os.name=='nt' else 'clear')
 
-# Coloured Text
+# Isn't even needed anymore tbqh
 from colorama import init
 init()
 from colorama import Fore, Back, Style
@@ -35,50 +37,53 @@ def run_and_return(command):
 def chunky_run(command):
     with Sultan.load() as s:
         result = s.java('-jar ChunkyLauncher.jar -' + command).run()
-# Startup information
 
+# Startup information
 clear_console()
-inform('Chunky Rendering Automation')
-inform('Please setup your scene inside of Chunky with the lighting you want, the selected chunks, camera location, etc')
-inform('Then give the scene a unique and memorable name and save the scene.')
-warn('If you turn on Dump every X frames, **DO NOT SAVE SNAPSHOT FOR EVERY DUMP**. It will get messy very fast, and make it a pain to stitch together the images.')
-warn('The name must not contain spaces!')
-warn('It is reccomended to clear out your scene folder beforehand, as this can get very messy VERY FAST!')
-warn('This script requires a copy of the ChunkyLauncher.jar to be placed in this directory with all these scripts.')
-ask('Press Enter once you have done this.')
+msgbox('Chunky Rendering Automation \nPlease setup your scene inside of Chunky with the lighting you want, the selected chunks, camera location, etc. \nThen give the scene a unique and memorable name and save the scene. \n \nIf you turn on Dump every X frames, **DO NOT SAVE SNAPSHOT FOR EVERY DUMP**. It will get messy very fast, and make it a pain to stitch together the images. \nMake sure the scene name does not contain any spaces!\n\n\nClick OK once you have done this.')
+while path.exists('ChunkyLauncher.jar') == False:
+    msgbox('The ChunkyLauncher.jar does not seem to be in this folder. Please place a copy of it in the same folder as this script. \n \nIf you need to download it, visit here: http://chunkyupdate2.llbit.se/ChunkyLauncher.jar')
+
 
 scene_list = run_and_return('list-scenes')
-for scene in scene_list:
-    inform(scene)
-print()
-print()
-scene_name = ask('What scene would you like to render? (Type it exactly!)')
-chunky_folder = ask('What is your Chunky directory? eg: /home/snorlax/.chunky (Paste it here. If you cannot find it, look for the Settings loaded message above, but discard everything after /.chunky)')
+scene_name = None
+
+while scene_name == None:
+    scene_name = choicebox('What scene would you like to render?', 'Select a scene', scene_list[2:]).replace('\t', '')
+    if scene_name == None:
+        msgbox('Please select a scene!')
+
+chunky_folder = None
+while chunky_folder == None:
+    msgbox('Please open your Chunky Directory in the following file browser window.')
+    chunky_folder = diropenbox()
 
 # Check to see if the Chunky directory is actually where the user set it
 while (os.path.exists(chunky_folder + '/chunky.json') != True):
-    warn('That seems to be the incorrect folder! Please try again.')
-    chunky_folder = ask('What is your Chunky directory? eg: /home/snorlax/.chunky (Paste it here. If you cannot find it, look for the Settings loaded message above, but discard everything after /.chunky)')
+    msgbox('That seems to be the incorrect folder! Please try again.')
+    chunky_folder = diropenbox()
 
 # Save this to a file for other processes to read
+log('Writing info to file...')
 info_to_write = {}
 info_to_write['details'] = []
 info_to_write['details'].append({
     'chunky_directory': chunky_folder,
     'scene_name': scene_name
 })
-
+print(scene_name)
 with open('info.json', 'w') as outfile:
     json.dump(info_to_write, outfile)
     outfile.close()
 
 # Select action
-inform('What would you like to do?')
-inform('1 | Rotation on spot')
-inform('2 | Straight Line flythrough -- NOT YET IMPLEMENTED')
-action = ask('Enter a number: ')
-print(action)
-if (action == '1'):
-    os.system('python spot_rotate.py')
+action = choicebox('What would you like to do?', 'Select render type', ['Rotation on the spot', 'Another mysterious thing'])
+if (action == 'Rotation on the spot'):
+    log('Rotation on the spot selected')
+    log('Handing over to spot_rotate.py ...')
+    from spot_rotate import execute_spot_rotate
+    execute_spot_rotate()
 else:
-    print('Not yet implemented. Exiting...')
+    print('Not yet implemented. This will come Soon. (tm)')
+    sys.exit()
+os.system('python rendering.py')
