@@ -1,3 +1,13 @@
 easygui.py
 *.pyc
+
+
+cache/*
+lib/*
+scenes/*
+versions/*
+chunky.json
 *.jar
+chunky-launcher.json
+
+
