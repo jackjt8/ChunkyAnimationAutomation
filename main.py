@@ -33,7 +33,7 @@ def warn(text):
 
 # Wrapper for the wrapper???
 def run_and_return(command):
-    if system_platform == 'Windows':
+    if system_platform() == 'Windows':
         return run_and_return_winfix(command)
     else:
         with Sultan.load() as s:
