@@ -3,8 +3,8 @@ import json
 import os
 from easygui import *
 # Progress bar, and other utilities
-from py_clui import Spinner
-from py_clui import gauge
+#from py_clui import Spinner
+#from py_clui import gauge
 from progress.bar import IncrementalBar
 from tqdm import tqdm
 

@@ -3,9 +3,9 @@ import os
 from os import path
 from easygui import *
 # Progress bar, and other utilities
-from py_clui import Spinner
-from py_clui import gauge
-from py_clui import Progress
+#from py_clui import Spinner
+#from py_clui import gauge
+#from py_clui import Progress
 
 # Command Line Wrapper
 from sultan.api import Sultan
