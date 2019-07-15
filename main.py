@@ -1,6 +1,8 @@
 import json
 import os
 import sys
+import subprocess
+from platform import system as system_platform # Used to check platform.
 from os import path
 from easygui import *
 # Progress bar, and other utilities
@@ -31,10 +33,19 @@ def warn(text):
 
 # Wrapper for the wrapper???
 def run_and_return(command):
-    with Sultan.load() as s:
-        result = s.java('-jar ChunkyLauncher.jar -' + command).run()
-        log(str(result.stdout))
-        return result.stderr
+    if system_platform == 'Windows':
+        return run_and_return_winfix(command)
+    else:
+        with Sultan.load() as s:
+            result = s.java('-jar ChunkyLauncher.jar -' + command).run()
+            log(str(result.stdout))
+            return result.stderr
+        
+def run_and_return_winfix(command):
+    cmd = 'java -jar ChunkyLauncher.jar -' + command
+    result = subprocess.run(cmd, stderr=subprocess.PIPE)
+    return result.stderr
+
 def chunky_run(command):
     with Sultan.load() as s:
         result = s.java('-jar ChunkyLauncher.jar -' + command).run()
