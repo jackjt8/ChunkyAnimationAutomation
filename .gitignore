@@ -1,5 +1,6 @@
 easygui.py
 *.pyc
+info.json
 
 
 cache/*
