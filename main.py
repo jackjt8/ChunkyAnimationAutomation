@@ -39,12 +39,16 @@ def run_and_return(command):
         with Sultan.load() as s:
             result = s.java('-jar ChunkyLauncher.jar -' + command).run()
             log(str(result.stdout))
-            return result.stderr
+            temp = [x.replace('\t', '') for x in result.stderr] # remove \t
+            return temp
         
 def run_and_return_winfix(command):
     cmd = 'java -jar ChunkyLauncher.jar -' + command
     result = subprocess.run(cmd, stderr=subprocess.PIPE)
-    return result.stderr
+    temp = str(result.stderr, 'utf-8') # result.stderr returns byte, need to set encoding and convert
+    temp = temp.splitlines(True) # split at new lines
+    temp = [x.replace('\r\n','').replace('\t', '') for x in temp] # remove \r\n and \t
+    return temp #return [scenedir, scenes:, scene_list]
 
 def chunky_run(command):
     with Sultan.load() as s:
@@ -61,7 +65,7 @@ scene_list = run_and_return('list-scenes')
 scene_name = None
 
 while scene_name == None:
-    scene_name = choicebox('What scene would you like to render?', 'Select a scene', scene_list[2:]).replace('\t', '')
+    scene_name = choicebox('What scene would you like to render?', 'Select a scene', scene_list[2:])
     if scene_name == None:
         msgbox('Please select a scene!')
 
