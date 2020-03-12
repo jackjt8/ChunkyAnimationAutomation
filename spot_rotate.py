@@ -1,11 +1,12 @@
 import json
 import os
+import sys
 import psutil
 import shutil
 from easygui import *
 # Progress bar, and other utilities
 
-from py_clui import gauge
+#from py_clui import gauge
 from progress.bar import IncrementalBar
 
 def clear_console():

@@ -23,6 +23,8 @@ Huge credit to [Ryhida / jackjt8](https://github.com/jackjt8) for dealing with m
 
 Currently working: Rotating on the spot
 
+Partially working (hard coded/no UI): Interpolation (interpT.py) using 1 or more scenes.
+
 Usage
 ---
 

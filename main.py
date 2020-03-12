@@ -1,11 +1,14 @@
 import json
 import os
+import sys
+import subprocess
+from platform import system as system_platform # Used to check platform.
 from os import path
 from easygui import *
 # Progress bar, and other utilities
-from py_clui import Spinner
-from py_clui import gauge
-from py_clui import Progress
+#from py_clui import Spinner
+#from py_clui import gauge
+#from py_clui import Progress
 
 # Command Line Wrapper
 from sultan.api import Sultan
@@ -30,10 +33,23 @@ def warn(text):
 
 # Wrapper for the wrapper???
 def run_and_return(command):
-    with Sultan.load() as s:
-        result = s.java('-jar ChunkyLauncher.jar -' + command).run()
-        log(str(result.stdout))
-        return result.stderr
+    if system_platform() == 'Windows':
+        return run_and_return_winfix(command)
+    else:
+        with Sultan.load() as s:
+            result = s.java('-jar ChunkyLauncher.jar -' + command).run()
+            log(str(result.stdout))
+            temp = [x.replace('\t', '') for x in result.stderr] # remove \t
+            return temp
+        
+def run_and_return_winfix(command):
+    cmd = 'java -jar ChunkyLauncher.jar -' + command
+    result = subprocess.run(cmd, stderr=subprocess.PIPE)
+    temp = str(result.stderr, 'utf-8') # result.stderr returns byte, need to set encoding and convert
+    temp = temp.splitlines(True) # split at new lines
+    temp = [x.replace('\r\n','').replace('\t', '') for x in temp] # remove \r\n and \t
+    return temp #return [scenedir, scenes:, scene_list]
+
 def chunky_run(command):
     with Sultan.load() as s:
         result = s.java('-jar ChunkyLauncher.jar -' + command).run()
@@ -49,7 +65,7 @@ scene_list = run_and_return('list-scenes')
 scene_name = None
 
 while scene_name == None:
-    scene_name = choicebox('What scene would you like to render?', 'Select a scene', scene_list[2:]).replace('\t', '')
+    scene_name = choicebox('What scene would you like to render?', 'Select a scene', scene_list[2:])
     if scene_name == None:
         msgbox('Please select a scene!')
 
